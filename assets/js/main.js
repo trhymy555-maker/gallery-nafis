@@ -1,0 +1,28 @@
+(() => {
+"use strict";
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)];
+const root=document.documentElement, themeMeta=$('meta[name="theme-color"]');
+function setTheme(theme,save=true){
+ const t=theme==="light"?"light":"dark";root.dataset.theme=t;
+ if(themeMeta)themeMeta.content=t==="light"?"#f4f0e7":"#17130d";
+ const btn=$("[data-theme-toggle]");
+ if(btn){const light=t==="light";const icon=$(".theme-icon",btn),label=$(".theme-label",btn);if(icon)icon.textContent=light?"☾":"☼";if(label)label.textContent=light?"حالت تاریک":"حالت روشن";btn.setAttribute("aria-label",light?"فعال کردن حالت تاریک":"فعال کردن حالت روشن");btn.setAttribute("aria-pressed",String(light));btn.title=light?"تغییر به حالت تاریک":"تغییر به حالت روشن";}
+ if(save){try{localStorage.setItem("nafis-theme",t)}catch(e){}}
+}
+let saved="dark";try{const v=localStorage.getItem("nafis-theme");if(v==="light"||v==="dark")saved=v}catch(e){}setTheme(root.dataset.theme||saved,false);
+document.addEventListener("click",e=>{if(e.target.closest("[data-theme-toggle]")){e.preventDefault();setTheme(root.dataset.theme==="dark"?"light":"dark");}});
+const menuButton=$("[data-menu-toggle]"),mobileMenu=$("[data-mobile-menu]");
+function closeMenu(){if(!menuButton||!mobileMenu)return;menuButton.setAttribute("aria-expanded","false");menuButton.setAttribute("aria-label","باز کردن منو");mobileMenu.hidden=true}
+if(menuButton&&mobileMenu){menuButton.addEventListener("click",()=>{const open=menuButton.getAttribute("aria-expanded")!=="true";menuButton.setAttribute("aria-expanded",String(open));menuButton.setAttribute("aria-label",open?"بستن منو":"باز کردن منو");mobileMenu.hidden=!open});mobileMenu.addEventListener("click",e=>{if(e.target.closest("a"))closeMenu()});window.addEventListener("resize",()=>{if(innerWidth>760)closeMenu()})}
+let activeFilter="all";const search=$("#art-search");
+function filterGallery(){const term=(search?.value||"").trim().toLocaleLowerCase("fa");let count=0;const cards=$$(".art-card");cards.forEach(card=>{const text=`${card.dataset.title||""} ${card.dataset.description||""} ${card.innerText}`.toLocaleLowerCase("fa");const visible=(activeFilter==="all"||card.dataset.category===activeFilter)&&(!term||text.includes(term));card.hidden=!visible;if(visible)count++});const empty=$("#empty-state");if(empty)empty.hidden=count!==0}
+document.addEventListener("click",e=>{const btn=e.target.closest(".filter-chip");if(btn){activeFilter=btn.dataset.filter||"all";$$('.filter-chip').forEach(b=>{const active=b===btn;b.classList.toggle("is-active",active);b.setAttribute("aria-pressed",String(active))});filterGallery();return}const product=e.target.closest("[data-product-open]");if(product){const card=product.closest(".art-card"),dialog=$("#product-dialog");if(!card||!dialog)return;$("#dialog-title").textContent=card.dataset.title||"";$("#dialog-description").textContent=card.dataset.description||"";$("#dialog-price").textContent=card.dataset.price||"برای اطلاع از قیمت تماس بگیرید";const image=$("#dialog-image");image.src=card.dataset.image||$("img",card)?.src||"";image.alt=card.dataset.title||"اثر هنری";if(dialog.showModal)dialog.showModal();else dialog.setAttribute("open","")}});
+search?.addEventListener("input",filterGallery);
+const dialog=$("#product-dialog");$$('[data-dialog-close]').forEach(btn=>btn.addEventListener("click",()=>{if(dialog?.close)dialog.close();else dialog?.removeAttribute("open")}));dialog?.addEventListener("click",e=>{if(e.target===dialog){if(dialog.close)dialog.close();else dialog.removeAttribute("open")}});
+const reveals=$$(".reveal");if("IntersectionObserver"in window&&!matchMedia("(prefers-reduced-motion: reduce)").matches){const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){entry.target.classList.add("is-visible");observer.unobserve(entry.target)}}),{threshold:.07});reveals.forEach(el=>observer.observe(el))}else reveals.forEach(el=>el.classList.add("is-visible"));
+// Fine-pointer custom cursor, disabled on touch screens and reduced-motion settings.
+const dot=$("[data-cursor-dot]"),outline=$("[data-cursor-outline]"),fine=matchMedia("(pointer:fine)").matches&&!matchMedia("(prefers-reduced-motion: reduce)").matches;
+if(dot&&outline&&fine){let x=innerWidth/2,y=innerHeight/2,ox=x,oy=y,raf=0;document.body.classList.add("cursor-ready");window.addEventListener("mousemove",e=>{x=e.clientX;y=e.clientY;dot.style.left=x+"px";dot.style.top=y+"px";outline.classList.remove("is-hidden");if(!raf)raf=requestAnimationFrame(function tick(){ox+=(x-ox)*.22;oy+=(y-oy)*.22;outline.style.left=ox+"px";outline.style.top=oy+"px";if(Math.abs(x-ox)>.1||Math.abs(y-oy)>.1)raf=requestAnimationFrame(tick);else raf=0})});document.addEventListener("mouseleave",()=>outline.classList.add("is-hidden"));document.addEventListener("mouseenter",()=>outline.classList.remove("is-hidden"));document.addEventListener("mouseover",e=>{if(e.target.closest("a,button,input,textarea,select,[role=button]"))outline.classList.add("is-hover");else outline.classList.remove("is-hover")});document.addEventListener("mousedown",()=>outline.classList.add("is-click"));document.addEventListener("mouseup",()=>outline.classList.remove("is-click"))}
+// Subtle hero image parallax; no work on touch/reduced motion.
+const parallax=$("[data-parallax]");if(parallax&&fine){const onMove=e=>{const r=parallax.getBoundingClientRect(),rx=(e.clientX-r.left)/r.width-.5,ry=(e.clientY-r.top)/r.height-.5;parallax.style.transform=`rotate(-3deg) translate3d(${rx*9}px,${ry*9}px,0)`};const parent=parallax.parentElement;parent?.addEventListener("mousemove",onMove);parent?.addEventListener("mouseleave",()=>parallax.style.transform="rotate(-3deg)")}
+})();
